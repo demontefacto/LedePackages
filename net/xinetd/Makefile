@@ -24,6 +24,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/xinetd
   SECTION:=net
   CATEGORY:=Network
+  DEPENDS:=+libwrap
   TITLE:=A powerful and secure super-server
   URL:=http://www.xinetd.org/
   PKG_MAINTAINER:=Jonathan McCrohan <jmccrohan@gmail.com>
@@ -45,7 +46,7 @@ TARGET_CFLAGS += -DNO_RPC
 TARGET_CPPFLAGS += -DHAVE_RLIM_T
 
 CONFIGURE_ARGS += \
-	--without-libwrap \
+	--with-libwrap \
 	--with-loadavg
 
 CONFIGURE_VARS += \
