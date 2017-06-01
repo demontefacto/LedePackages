@@ -30,7 +30,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/openssh/Default
 	SECTION:=net
 	CATEGORY:=Network
-	DEPENDS:=+libopenssl +zlib
+	DEPENDS:=+libopenssl +zlib +libwrap
 	TITLE:=OpenSSH
 	MAINTAINER:=Peter Wagner <tripolar@gmx.at>
 	URL:=http://www.openssh.com/
@@ -165,7 +165,8 @@ CONFIGURE_ARGS+= \
 	--disable-wtmpx \
 	--without-bsd-auth \
 	--without-kerberos5 \
-	--without-x
+	--without-x \
+	--with-tcpwrappers
 
 ifeq ($(BUILD_VARIANT),with-pam)
 CONFIGURE_ARGS += \
