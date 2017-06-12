@@ -158,11 +158,11 @@ CONFIGURE_ARGS+= \
 	--disable-debug \
 	--disable-strip \
 	--disable-etc-default-login \
-	--disable-lastlog \
-	--disable-utmp \
-	--disable-utmpx \
-	--disable-wtmp \
-	--disable-wtmpx \
+	--enable-lastlog \
+	--enable-utmp \
+	--enable-utmpx \
+	--enable-wtmp \
+	--enable-wtmpx \
 	--without-bsd-auth \
 	--without-kerberos5 \
 	--without-x \
