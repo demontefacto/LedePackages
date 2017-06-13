@@ -159,14 +159,14 @@ CONFIGURE_ARGS+= \
 	--disable-strip \
 	--disable-etc-default-login \
 	--enable-lastlog \
-	--disable-utmp \
-	--disable-utmpx \
-	--disable-wtmp \
-	--disable-wtmpx \
+	--enable-utmp \
+	--enable-utmpx \
+	--enable-wtmp \
+	--enable-wtmpx \
 	--without-bsd-auth \
 	--without-kerberos5 \
 	--without-x \
-	--with-tcp-wrappers
+	--with-tcpwrappers
 
 ifeq ($(BUILD_VARIANT),with-pam)
 CONFIGURE_ARGS += \
