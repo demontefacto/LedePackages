@@ -21,8 +21,9 @@ start_service() {
 		}
 	done
 	mkdir -m 0700 -p /var/empty
+	touch /var/run/utmp
 	[ -f /etc/firstboot ] && { 
 		/usr/sbin/sshd
-		rm -rf /etc/rc.firstboot
+		rm -rf /etc/firstboot
 	}
 } 

@@ -161,7 +161,7 @@ CONFIGURE_ARGS+= \
 	--enable-lastlog \
 	--disable-utmp \
 	--disable-utmpx \
-	--disable-wtmp \
+	--enable-wtmp \
 	--disable-wtmpx \
 	--without-bsd-auth \
 	--without-kerberos5 \

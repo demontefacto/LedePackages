@@ -20,12 +20,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=joe
-PKG_VERSION:=4.3
+PKG_VERSION:=4.4
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=@SF/joe-editor
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_MD5SUM:=5a167f5e88e62c77bb42b0145d72c466
+PKG_MD5SUM:=59e63debe60b456a6ee5c0c27a756a47
 PKG_BUILD_DIR=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_MAINTAINER:=Vitaly Protsko <villy@sft.ru>
 PKG_LICENCE:=GPL-2.0
@@ -51,6 +51,10 @@ define Package/joe/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/joe/joe $(1)/usr/bin/
 	$(INSTALL_DIR) $(1)/etc/joe
 	$(INSTALL_CONF) ./files/joerc $(1)/etc/joe/joerc
+	$(INSTALL_DIR) $(1)/usr/share/joe/syntax
+	$(CP) $(PKG_BUILD_DIR)/syntax/* $(1)/usr/share/joe/syntax/
+	$(INSTALL_DIR) $(1)/usr/share/joe/charmaps
+	$(CP) $(PKG_BUILD_DIR)/charmaps/* $(1)/usr/share/joe/charmaps/
 endef
 
 define Package/joe/conffiles
