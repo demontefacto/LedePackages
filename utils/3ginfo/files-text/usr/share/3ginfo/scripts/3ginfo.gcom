@@ -15,14 +15,15 @@ opengt
  gosub readatcmdnr
  let $v=$s
 
- if $toupper($mid($v,0,3)) = "ZTE" goto zte
- if $toupper($mid($v,0,3)) = "OPT" goto option
- if $toupper($mid($v,0,3)) = "SIE" goto sierra
- if $toupper($mid($v,0,3)) = "NOV" goto novatel
  if $toupper($mid($v,0,3)) = "HUA" goto huawei
- if $toupper($mid($v,0,3)) = "VOD" goto vodafone
  if $toupper($mid($v,0,3)) = "NOK" goto vodafone
+ if $toupper($mid($v,0,3)) = "NOV" goto novatel
+ if $toupper($mid($v,0,3)) = "OPT" goto option
+ if $toupper($mid($v,0,3)) = "QUA" goto qualcomm
  if $toupper($mid($v,0,3)) = "SIM" goto simcom
+ if $toupper($mid($v,0,3)) = "SIE" goto sierra
+ if $toupper($mid($v,0,3)) = "VOD" goto vodafone
+ if $toupper($mid($v,0,3)) = "ZTE" goto zte
  goto generic
 
 :simcom
@@ -59,6 +60,12 @@ opengt
  gosub readatcmd
  goto next
 
+:qualcomm
+ let $c="AT+COPS?^m"
+ let $r="+COPS"
+ gosub readatcmd
+ goto next1
+
 :zte
  let $c="AT+COPS?^m"
  let $r="+COPS"
@@ -86,6 +93,10 @@ opengt
  let $r="\^LTERSRP"
  gosub readatcmd
 
+ let $c="AT\^HCSQ?^m"
+ let $r="\^HCSQ"
+ gosub readatcmd
+
 :generic
  let $c="AT\^SYSINFO^m"
  let $r="\^SYSINFO"
@@ -103,6 +114,10 @@ opengt
 
  let $c="AT+CGREG=2;+CGREG?^m"
  let $r="+CGREG"
+ gosub readatcmd
+
+ let $c="AT+CEREG=2;+CEREG?^m"
+ let $r="+CEREG"
  gosub readatcmd
 
  let $c="AT+CGEQNEG=1^m"

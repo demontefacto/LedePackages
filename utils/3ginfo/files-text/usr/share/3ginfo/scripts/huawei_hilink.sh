@@ -2,9 +2,14 @@
 
 IP=$1
 [ -z "$IP" ] && exit 0
+[ -e /usr/bin/wget ] || exit 0
 
 getvaluen() {
 	echo $(awk -F[\<\>] '/<'$2'>/ {print $3}' /tmp/$1 | sed 's/[^0-9]//g')
+}
+
+getvaluens() {
+	echo $(awk -F[\<\>] '/<'$2'>/ {print $3}' /tmp/$1 | sed 's/[^0-9-]//g')
 }
 
 getvalue() {
@@ -12,19 +17,19 @@ getvalue() {
 }
 
 cookie=$(mktemp)
-wget -t 25 -O /tmp/webserver-token "http://$IP/api/webserver/token" >/dev/null 2>&1
+/usr/bin/wget -t 25 -O /tmp/webserver-token "http://$IP/api/webserver/token" >/dev/null 2>&1
 token=$(getvaluen webserver-token token)
 if [ -z "$token" ]; then
-	wget -q -O /dev/null --keep-session-cookies --save-cookies $cookie "http://$IP/html/home.html"
+	/usr/bin/wget -q -O /dev/null --keep-session-cookies --save-cookies $cookie "http://$IP/html/home.html"
 fi
 
-files="device/signal monitoring/status net/current-plmn net/signal-para device/information"
+files="device/signal monitoring/status net/current-plmn net/signal-para device/information device/basic_information"
 for f in $files; do
 	nf=$(echo $f | sed 's!/!-!g')
 	if [ -n "$token" ]; then
-		wget -t 3 -O /tmp/$nf "http://$IP/api/$f" --header "__RequestVerificationToken: $token" >/dev/null 2>&1
+		/usr/bin/wget -t 3 -O /tmp/$nf "http://$IP/api/$f" --header "__RequestVerificationToken: $token" >/dev/null 2>&1
 	else
-		wget -t 3 -O /tmp/$nf "http://$IP/api/$f" --load-cookies=$cookie >/dev/null 2>&1
+		/usr/bin/wget -t 3 -O /tmp/$nf "http://$IP/api/$f" --load-cookies=$cookie >/dev/null 2>&1
 	fi
 done
 
@@ -42,7 +47,6 @@ fi
 
 MODEN=$(getvaluen monitoring-status CurrentNetworkType)
 case $MODEN in
-	0)  MODE="brak uslugi";;
 	1)  MODE="GSM";;
 	2)  MODE="GPRS";;
 	3)  MODE="EDGE";;
@@ -99,6 +103,11 @@ numeric=$(getvaluen net-current-plmn Numeric)
 echo "+COPS: 0,2,\"$numeric\",x"
 
 lac=$(getvalue net-signal-para Lac)
+if [ -z "$lac" ]; then
+	/usr/bin/wget -t 3 -O /tmp/add-param "http://$IP/config/deviceinformation/add_param.xml" > /dev/null 2>&1
+	lac=$(getvalue add-param lac)
+	rm /tmp/add-param
+fi
 cid=$(getvalue net-signal-para CellID)
 if [ -z "$cid" ]; then
 	cell_id=$(getvalue device-signal cell_id)
@@ -107,16 +116,31 @@ if [ -z "$cid" ]; then
 fi
 echo "+CREG: 2,1,\"$lac\",\"$cid\""
 
-rsrp=$(getvaluen device-signal rsrp)
-rsrq=$(getvaluen device-signal rsrq)
-echo "^LTERSRP:-$rsrp,-$rsrq"
-
-rscp=$(getvaluen net-signal-para Rscp)
-ecio=$(getvaluen net-signal-para Ecio)
-echo "^CSNR: -$rscp,-$ecio"
+if [ "x$MODE" = "xLTE" ]; then
+	rsrp=$(getvaluens device-signal rsrp)
+	sinr=$(getvaluens device-signal sinr)
+	rsrq=$(getvaluens device-signal rsrq)
+	rsrp=$(awk 'BEGIN {print '$rsrp' + 141}')
+	sinr=$(awk 'BEGIN {print ('$sinr'+20.2)*5}')
+	rsrq=$(awk 'BEGIN {print ('$rsrq'+20)*2}')
+	echo "^HCSQ: \"$MODE\",$rssi,$rsrp,$sinr,$rsrq"
+else
+	rscp=$(getvaluens device-signal rscp)
+	[ -z "$rscp" ] && rscp=$(getvaluens net-signal-para Rscp)
+	ecio=$(getvaluens net-signal-para ecio)
+	[ -z "$ecio" ] && ecio=$(getvaluens net-signal-para Ecio)
+	echo "^CSNR: $rscp,$ecio"
+fi
 
 device=$(getvalue device-information DeviceName)
-[ -n "$device" ] && echo "DEVICE:huawei $device HiLink"
+if [ -n "$device" ]; then
+	class=$(getvalue device-information Classify)
+	echo "DEVICE:Huawei $device $class"
+else
+	device=$(getvalue device-basic_information devicename)
+	class=$(getvalue device-basic_information classify)
+	[ -n "$device" ] && echo "DEVICE:Huawei $device $class"
+fi
 
 if [ "x$2" != "xdebug" ]; then
 	for f in $files webserver/token; do
@@ -127,5 +151,3 @@ fi
 rm $cookie
 
 exit 0
-
-#

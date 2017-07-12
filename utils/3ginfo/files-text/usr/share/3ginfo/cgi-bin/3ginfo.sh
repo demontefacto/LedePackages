@@ -1,9 +1,15 @@
 #!/bin/sh
 
 #
-# (c) 2010-2015 Cezary Jackiewicz <cezary@eko.one.pl>
+# (c) 2010-2016 Cezary Jackiewicz <cezary@eko.one.pl>
 #
 
+# Output format
+# 0 - html
+# 1 - txt
+# 2 - json
+
+FORMAT=1
 RES="/usr/share/3ginfo"
 
 LANG=$(uci -q get 3ginfo.@3ginfo[0].language)
@@ -23,24 +29,37 @@ getpath() {
 	esac
 }
 
-if [ "`basename $0`" = "3ginfo" ]; then
-	TOTXT=1
-else
-	TOTXT=0
-	echo -e "Content-type: text/html\n\n"
-fi
+showjsonerror() {
+	echo "{\"error\": \"$1\"}"
+}
 
-if [ ! -e $RES/msg.dat.$LANG ]; then
-	echo "File missing: $RES/msg.dat.$LANG"
-	exit 0
+if [ "x$1" = "xjson" ]; then
+	FORMAT=2
+else
+	if [ "`basename $0`" = "3ginfo" ]; then
+		FORMAT=1
+	else
+		FORMAT=0
+		echo -e "Content-type: text/html\n\n"
+	fi
+
+	if [ ! -e $RES/msg.dat.$LANG ]; then
+		echo "File missing: $RES/msg.dat.$LANG"
+		exit 0
+	fi
+	. $RES/msg.dat.$LANG
 fi
-. $RES/msg.dat.$LANG
 
 # odpytanie urzadzenia
 DEVICE=$(uci -q get 3ginfo.@3ginfo[0].device)
 
 if echo "x$DEVICE" | grep -q "192.168."; then
-	O=$($RES/scripts/huawei_hilink.sh $DEVICE)
+	if grep -q "Vendor=1bbb" /sys/kernel/debug/usb/devices; then
+		O=$($RES/scripts/alcatel_hilink.sh $DEVICE)
+	fi
+	if grep -q "Vendor=12d1" /sys/kernel/debug/usb/devices; then
+		O=$($RES/scripts/huawei_hilink.sh $DEVICE)
+	fi
 	SEC=$(uci -q get 3ginfo.@3ginfo[0].network)
 	SEC=${SEC:-wan}
 else
@@ -58,20 +77,16 @@ else
 	fi
 
 	if [ "x$DEVICE" = "x" ]; then
-		if [ $TOTXT -eq 0 ]; then
-			echo "<h3 style='color:red;' class=\"c\">$NOTDETECTED</h3>"
-		else
-			echo $NOTDETECTED
-		fi
+		[ $FORMAT -eq 0 ] && echo "<h3 style='color:red;' class=\"c\">$NOTDETECTED</h3>"
+		[ $FORMAT -eq 1 ] && echo $NOTDETECTED
+		[ $FORMAT -eq 2 ] && showjsonerror "NOTDETECTED"
 		exit 0
 	fi
 
 	if [ ! -e $DEVICE ]; then
-		if [ $TOTXT -eq 0 ]; then
-			echo "<h3 style='color:red;' class=\"c\">$NODEVICE $DEVICE!</h3>"
-		else
-			echo "$NODEVICE $DEVICE."
-		fi
+		[ $FORMAT -eq 0 ] && echo "<h3 style='color:red;' class=\"c\">$NODEVICE $DEVICE!</h3>"
+		[ $FORMAT -eq 1 ] && echo "$NODEVICE $DEVICE."
+		[ $FORMAT -eq 2 ] && showjsonerror "NODEVICE $DEVICE"
 		exit 0
 	fi
 
@@ -102,11 +117,9 @@ else
 		fi
 		if [ ! -z $PINCODE ]; then
 			PINCODE="$PINCODE" gcom -d "$DEVICE" -s /etc/gcom/setpin.gcom > /dev/null || {
-				if [ $TOTXT -eq 0 ]; then
-					echo "<h3 style='color:red;' class=\"c\">$PINERROR</h3>"
-				else
-					echo $PINERROR
-				fi
+				[ $FORMAT -eq 0 ] && echo "<h3 style='color:red;' class=\"c\">$PINERROR</h3>"
+				[ $FORMAT -eq 1 ] && echo "$PINERROR"
+				[ $FORMAT -eq 2 ] && showjsonerror "PINERROR"
 				exit 0
 			}
 		fi
@@ -114,6 +127,17 @@ else
 	fi
 
 	O=$(gcom -d $DEVICE -s $RES/scripts/3ginfo.gcom 2>/dev/null)
+fi
+
+if [ "x$1" = "xtest" ]; then
+	echo "$O"
+	echo "---------------------------------------------------------------"
+	ls /dev/tty*
+	echo "---------------------------------------------------------------"
+	cat /sys/kernel/debug/usb/devices
+	echo "---------------------------------------------------------------"
+	uci show 3ginfo
+	exit 0
 fi
 
 # CSQ
@@ -131,8 +155,6 @@ if [ $CSQ -ge 0 -a $CSQ -le 31 ]; then
 	[ $CSQ -ge 15 ] && CSQ_COL="yellow"
 	[ $CSQ -ge 20 ] && CSQ_COL="green"
 	CSQ_RSSI=$((2 * CSQ - 113))
-	[ $CSQ -eq 0 ] && CSQ_RSSI="<= "$CSQ_RSSI
-	[ $CSQ -eq 31 ] && CSQ_RSSI=">= "$CSQ_RSSI
 else
 	CSQ="-"
 	CSQ_PER="0"
@@ -148,7 +170,7 @@ if [ "x$COPS_NUM" = "x" ]; then
 	COPS_MNC="-"
 else
 	COPS_MCC=${COPS_NUM:0:3}
-	COPS_MNC=${COPS_NUM:3:2}
+	COPS_MNC=${COPS_NUM:3:3}
 	COPS=$(awk -F[\;] '/'$COPS_NUM'/ {print $2}' $RES/mccmnc.dat)
 	[ "x$COPS" = "x" ] && COPS="-"
 fi
@@ -167,7 +189,7 @@ if [ "$COPS_NUM" = "-" ]; then
 		COPS="$COPS_TMP"
 		COPS_NUM=$(awk -F[\;] 'BEGIN {IGNORECASE = 1} /'"$COPS"'/ {print $1}' $RES/mccmnc.dat)
 		COPS_MCC=${COPS_NUM:0:3}
-		COPS_MNC=${COPS_NUM:3:2}
+		COPS_MNC=${COPS_NUM:3:3}
 	fi
 fi
 
@@ -298,6 +320,16 @@ else
 	LAC_NUM="-"
 fi
 
+# TAC
+TAC=$(echo "$O" | awk -F[,] '/^\+CEREG/ {printf "%s", toupper($3)}' | sed 's/[^A-F0-9]//g')
+if [ "x$TAC" != "x" ]; then
+	TAC_NUM=$(printf %d 0x$TAC)
+else
+	TAC="-"
+	TAC_NUM="-"
+fi
+
+
 # ECIO / RSCP
 ECIO="-"
 RSCP="-"
@@ -327,79 +359,90 @@ fi
 # RSRP / RSRQ
 RSRP="-"
 RSRQ="-"
+SINR="-"
 RSRx=$(echo "$O" | awk -F[,:] '/^\^LTERSRP:/ {print $2}')
 if [ "x$RSRx" != "x" ]; then
 	RSRP=$RSRx
 	RSRQ=$(echo "$O" | awk -F[,:] '/^\^LTERSRP:/ {print $3}')
 fi
 
-BTSINFO=""
-ENB="-"
-ENB_NUM="-"
-ENB_SHOW="none"
-CID=$(echo "$O" | awk -F[,] '/\'$CREG'/ {printf "%s", toupper($4)}' | sed 's/[^A-F0-9]//g')
-if [ "x$CID" != "x" ]; then
-	if [ ${#CID} -le 4 ]; then
-		LCID="-"
-		LCID_NUM="-"
-		LCID_SHOW="none"
-		RNC="-"
-		RNC_NUM="-"
-		RNC_SHOW="none"
-	else
-		LCID=$CID
-		LCID_NUM=$(printf %d 0x$LCID)
-		LCID_SHOW="block"
-		RNC=$(echo "$LCID" | awk '{print substr($1,1,length($1)-4)}')
-		RNC_NUM=$(printf %d 0x$RNC)
-		RNC_SHOW="block"
-		CID=$(echo "$LCID" | awk '{print substr($1,length(substr($1,1,length($1)-4))+1)}')
+TECH=$(echo "$O" | awk -F[,:] '/^\^HCSQ:/ {print $2}' | sed 's/[" ]//g')
+if [ "x$TECH" != "x" ]; then
+	PARAM2=$(echo "$O" | awk -F[,:] '/^\^HCSQ:/ {print $4}')
+	PARAM3=$(echo "$O" | awk -F[,:] '/^\^HCSQ:/ {print $5}')
+	PARAM4=$(echo "$O" | awk -F[,:] '/^\^HCSQ:/ {print $6}')
 
-		if [ "x$MODE" = "xLTE" ]; then
-			LCIDLEN=${#LCID}
-			CIDSTART=$((LCIDLEN - 2))
-			ENB=$(echo $LCID | cut -c 1-$CIDSTART)
-			ENB_NUM=$(printf %d 0x$ENB)
-			ENB_SHOW="block"
-			CIDSTART=$((LCIDLEN - 1))
-			CID=$(echo $LCID | cut -c $CIDSTART-255)
-			CID=$(printf %04X 0x$CID)
-			RNC="-"
-			RNC_NUM="-"
-			RNC_SHOW="none"
+	case "$TECH" in
+		WCDMA*)
+			RSCP=$(awk 'BEGIN {print -121 + '$PARAM2'}')
+			ECIO=$(awk 'BEGIN {print -32.5 + '$PARAM3'/2}')
+			;;
+		LTE*)
+			RSRP=$(awk 'BEGIN {print -141 + '$PARAM2'}')
+			SINR=$(awk 'BEGIN {print -20.2 + '$PARAM3'/5}')
+			RSRQ=$(awk 'BEGIN {print -20 + '$PARAM4'/2}')
+			;;
+	esac
+fi
+
+if [ -n "$SEC" ]; then
+	if [ "x$(uci -q get network.$SEC.proto)" = "xqmi" ]; then
+		. /usr/share/libubox/jshn.sh
+		json_init
+		json_load "$(uqmi -d "$(uci -q get network.$SEC.device)" --get-signal-info)" >/dev/null 2>&1
+		json_get_var T type
+		if [ "x$T" = "xlte" ]; then
+			json_get_var RSRP rsrp
+			json_get_var RSRQ rsrq
+		fi
+		if [ "x$T" = "xwcdma" ]; then
+			json_get_var ECIO ecio
+			json_get_var RSSI rssi
+			json_get_var RSCP rscp
+			if [ -z "$RSCP" ]; then
+				RSCP=$((RSSI+ECIO))
+			fi
 		fi
 	fi
+fi
 
+BTSINFO=""
+CID=$(echo "$O" | awk -F[,] '/\'$CREG'/ {printf "%s", toupper($4)}' | sed 's/[^A-F0-9]//g')
+if [ "x$CID" != "x" ]; then
 	CID_NUM=$(printf %d 0x$CID)
-	if [ $TOTXT -eq 0 ]; then
-		case $COPS_NUM in
-			26001*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=3\&amp;mode=adv\">$CID</a>";;
-			26002*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=1\&amp;mode=adv\">$CID</a>";;
-			26003*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=2\&amp;mode=adv\">$CID</a>";;
-			26006*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=4\&amp;mode=adv\">$CID</a>";;
-			26016*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=7\&amp;mode=adv\">$CID</a>";;
-			26017*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=8\&amp;mode=adv\">$CID</a>";;
-		esac
+
+	if [ ${#CID} -gt 4 ]; then
+		T=$(echo "$CID" | awk '{print substr($1,length(substr($1,1,length($1)-4))+1)}')
+	else
+		T=$CID
 	fi
 
 	CLF=$(uci -q get 3ginfo.@3ginfo[0].clf)
 	if [ -e "$CLF" ]; then
 		PAT="xxx"
-		[ "x$CID_NUM" != "x-" -a "x$LAC_NUM" != "x-" ] && PAT="^$COPS_NUM;0x"$(printf %04X $CID_NUM)";0x"$(printf %04X $LAC_NUM)";"
+		[ "x$T" != "x-" -a "x$LAC_NUM" != "x-" ] && PAT="^$COPS_NUM;0x"$(printf %04X 0x$T)";0x"$(printf %04X $LAC_NUM)";"
 		is_gz=$(dd if="$CLF" bs=1 count=2 2>/dev/null | hexdump -v -e '1/1 "%02x"')
 		if [ "x$is_gz" = "x1f8b" ] ; then
 			BTSINFO="<a href=\"http://maps.google.pl/?t=k\&z=17\&q="$(zcat "$CLF" | awk -F";" '/'$PAT'/ {printf $5","$6}')"\">"$(zcat "$CLF" | awk -F";" '/'$PAT'/ {gsub(/\!/,"\\!");print $8}')"</a>"
 		else
 			BTSINFO="<a href=\"http://maps.google.pl/?t=k\&z=17\&q="$(awk -F";" '/'$PAT'/ {printf $5","$6}' "$CLF")"\">"$(awk -F";" '/'$PAT'/ {gsub(/\!/,"\\!");print $8}' "$CLF")"</a>"
 		fi
+		if [ $FORMAT -eq 2 ]; then
+			BTSINFO=$(echo "$BTSINFO" | sed 's!<a.*>\(.*\)</a>!\1!g')
+		fi
+	fi
+
+	if [ $FORMAT -eq 0 ]; then
+		case $COPS_NUM in
+			26001*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=3\&amp;mode=adv\">$CID</a>";;
+			26002*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=-1\&amp;mode=adv\">$CID</a>";;
+			26003*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=-1\&amp;mode=adv\">$CID</a>";;
+			26006*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=4\&amp;mode=adv\">$CID</a>";;
+			26016*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=7\&amp;mode=adv\">$CID</a>";;
+			26017*) CID="<a href=\"http://btsearch.pl/szukaj.php?search="$CID"h\&amp;siec=8\&amp;mode=adv\">$CID</a>";;
+		esac
 	fi
 else
-	LCID="-"
-	LCID_NUM="-"
-	LCID_SHOW="none"
-	RNC="-"
-	RNC_NUM="-"
-	RNC_SHOW="none"
 	CID="-"
 	CID_NUM="-"
 fi
@@ -446,22 +489,22 @@ TX="-"
 
 if [ -z "$SEC" ]; then
 	STATUS=$NOINFO
+	[ $FORMAT -eq 2 ] && STATUS="NOINFO"
+
 	STATUS_TRE="-"
 	STATUS_SHOW="none"
 	STATUS_SHOW_BUTTON="none"
 else
 	NETUP=$(ifstatus $SEC | grep "\"up\": true")
 	if [ -n "$NETUP" ]; then
-		if [ $TOTXT -eq 0 ]; then
-			STATUS="<font color=green>$CONNECTED</font>"
-		else
-			STATUS=$CONNECTED
-		fi
+		[ $FORMAT -eq 0 ] && STATUS="<font color=green>$CONNECTED</font>"
+		[ $FORMAT -eq 1 ] && STATUS=$CONNECTED
+		[ $FORMAT -eq 2 ] && STATUS="CONNECTED"
 		STATUS_TRE=$DISCONNECT
 
 		CT=$(uci -q -P /var/state/ get network.$SEC.connect_time)
 		if [ -z $CT ]; then
-			CT=$(ifstatus $SEC | awk -F[:,] '/uptime/ {print $2}')
+			CT=$(ifstatus $SEC | awk -F[:,] '/uptime/ {print $2}' | xargs)
 		else
 			UPTIME=$(cut -d. -f1 /proc/uptime)
 			CT=$((UPTIME-CT))
@@ -479,11 +522,10 @@ else
 			TX=$(ifconfig $IFACE | awk -F[\(\)] '/bytes/ {printf "%s",$4}')
 		fi
 	else
-		if [ $TOTXT -eq 0 ]; then
-			STATUS="<font color=red>$DISCONNECTED</font>"
-		else
-			STATUS=$DISCONNECTED
-		fi
+
+		[ $FORMAT -eq 0 ] && STATUS="<font color=red>$DISCONNECTED</font>"
+		[ $FORMAT -eq 1 ] && STATUS=$DISCONNECTED
+		[ $FORMAT -eq 2 ] && STATUS="DISCONNECTED"
 		STATUS_TRE=$CONNECT
 	fi
 	STATUS_SHOW="block"
@@ -501,13 +543,13 @@ if [ "x$DEVICE" = "x" ]; then
 fi
 
 # podmiana w szablonie
-if [ $TOTXT -eq 0 ]; then
-	EXT="html"
+if [ $FORMAT -eq 2 ]; then
+	TEMPLATE="$RES/status.json"
 else
-	EXT="txt"
+	[ $FORMAT -eq 0 ] && EXT="html"
+	[ $FORMAT -eq 1 ] && EXT="txt"
+	TEMPLATE="$RES/status.$EXT.$LANG"
 fi
-
-TEMPLATE="$RES/status.$EXT.$LANG"
 
 if [ -e $TEMPLATE ]; then
 	sed -e "s!{CSQ}!$CSQ!g; \
@@ -520,17 +562,10 @@ if [ -e $TEMPLATE ]; then
 	s!{COPS_MNC}!$COPS_MNC!g; \
 	s!{LAC}!$LAC!g; \
 	s!{LAC_NUM}!$LAC_NUM!g; \
-	s!{LCID}!$LCID!g; \
-	s!{LCID_NUM}!$LCID_NUM!g; \
-	s!{LCID_SHOW}!$LCID_SHOW!g; \
-	s!{RNC}!$RNC!g; \
-	s!{RNC_NUM}!$RNC_NUM!g; \
-	s!{RNC_SHOW}!$RNC_SHOW!g; \
-	s!{ENB}!$ENB!g; \
-	s!{ENB_NUM}!$ENB_NUM!g; \
-	s!{ENB_SHOW}!$ENB_SHOW!g; \
 	s!{CID}!$CID!g; \
 	s!{CID_NUM}!$CID_NUM!g; \
+	s!{TAC}!$TAC!g; \
+	s!{TAC_NUM}!$TAC_NUM!g; \
 	s!{BTSINFO}!$BTSINFO!g; \
 	s!{DOWN}!$DOWN!g; \
 	s!{UP}!$UP!g; \
@@ -551,6 +586,7 @@ if [ -e $TEMPLATE ]; then
 	s!{RSCP}!$RSCP!g; \
 	s!{RSRP}!$RSRP!g; \
 	s!{RSRQ}!$RSRQ!g; \
+	s!{SINR}!$SINR!g; \
 	s!{MODE}!$MODE!g" $TEMPLATE
 else
 	echo "Template $TEMPLATE missing!"

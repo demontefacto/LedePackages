@@ -23,13 +23,12 @@
  <span class="l" style="display:{QOS_SHOW}">Profil UMTS QoS:</span><span class="r" style="display:{QOS_SHOW}">{DOWN} kbps DOWN | {UP} kbps UP</span>
  <span class="l">MCC MNC:</span><span class="r">{COPS_MCC} {COPS_MNC}</span>
  <span class="l">LAC:</span><span class="r">{LAC} ({LAC_NUM})</span>
- <span class="l" style="display:{LCID_SHOW}">LCID:</span><span class="r" style="display:{LCID_SHOW}">{LCID} ({LCID_NUM})</span>
- <span class="l" style="display:{RNC_SHOW}">RNC:</span><span class="r" style="display:{RNC_SHOW}">{RNC} ({RNC_NUM})</span>
- <span class="l" style="display:{ENB_SHOW}">eNB:</span><span class="r" style="display:{ENB_SHOW}">{ENB} ({ENB_NUM})</span>
  <span class="l">CID:</span><span class="r">{CID} ({CID_NUM})</span>
+ <span class="l">TAC:</span><span class="r">{TAC} ({TAC_NUM})</span>
  <span class="l">RSCP:</span><span class="r">{RSCP} dBm</span>
  <span class="l">Ec/IO:</span><span class="r">{ECIO} dB</span>
  <span class="l">RSRP:</span><span class="r">{RSRP} dBm</span>
+ <span class="l">SINR:</span><span class="r">{SINR} dB</span>
  <span class="l">RSRQ:</span><span class="r">{RSRQ} dB</span>
  <span class="l">&nbsp;</span><small><span class="r">{BTSINFO}</small>
  <span class="l">Urządzenie:</span><span class="r">{DEVICE}</span>
