@@ -43,7 +43,6 @@ endef
 
 define Build/Configure
 	$(call Build/Configure/Default, \
-		--without-bash-malloc \
                 --bindir=/bin \
 	)
 endef
