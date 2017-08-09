@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2014 OpenWrt.org
+# Copyright (C) 2006-2011 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,17 +8,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openssh
-PKG_VERSION:=7.4p1
+PKG_VERSION:=6.6p1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://ftp.spline.de/pub/OpenBSD/OpenSSH/portable/ \
-		https://anorien.csc.warwick.ac.uk/pub/OpenBSD/OpenSSH/portable/ \
-		https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/
-PKG_MD5SUM:=b2db2a83caf66a208bb78d6d287cdaa3
-
-PKG_LICENSE:=BSD ISC
-PKG_LICENSE_FILES:=LICENCE
+PKG_SOURCE_URL:=ftp://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/ \
+		ftp://openbsd.wiretapped.net/pub/OpenBSD/OpenSSH/portable/ \
+		ftp://ftp.belnet.be/packages/openbsd/OpenSSH/portable/ \
+		ftp://ftp.de.openbsd.org/pub/unix/OpenBSD/OpenSSH/portable/
+PKG_MD5SUM:=3e9800e6bca1fbac0eea4d41baa7f239
 
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
@@ -30,7 +28,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/openssh/Default
 	SECTION:=net
 	CATEGORY:=Network
-	DEPENDS:=+libopenssl +zlib +libwrap
+	DEPENDS:=+libopenssl +zlib +SSP_SUPPORT:libssp +libwrap
 	TITLE:=OpenSSH
 	MAINTAINER:=Peter Wagner <tripolar@gmx.at>
 	URL:=http://www.openssh.com/
@@ -84,7 +82,6 @@ define Package/openssh-server
 	$(call Package/openssh/Default)
 	DEPENDS+= +openssh-keygen
 	TITLE+= server
-	USERID:=sshd=22:sshd=22
 endef
 
 define Package/openssh-server/description
@@ -100,7 +97,6 @@ define Package/openssh-server-pam
 	DEPENDS+= +libpthread +openssh-keygen +libpam
 	TITLE+= server (with PAM support)
 	VARIANT:=with-pam
-	USERID:=sshd=22:sshd=22
 endef
 
 define Package/openssh-server-pam/description
@@ -125,27 +121,10 @@ endef
 define Package/openssh-sftp-server
 	$(call Package/openssh/Default)
 	TITLE+= SFTP server
-	# Strip dependencies to avoid pulling in OpenSSL etc.
-	DEPENDS:=
 endef
 
 define Package/openssh-sftp-server/description
 OpenSSH SFTP server.
-endef
-
-define Package/openssh-sftp-avahi-service
-	$(call Package/openssh/Default)
-	TITLE+= (SFTP Avahi service)
-	DEPENDS:=+openssh-sftp-server +avahi-daemon
-endef
-
-define Package/openssh-sftp-avahi-service/description
- This package contains the service definition for announcing
- SFTP support via mDNS/DNS-SD.
-endef
-
-define Package/openssh-sftp-avahi-service/conffiles
-/etc/avahi/services/sftp-ssh.service
 endef
 
 CONFIGURE_ARGS+= \
@@ -155,7 +134,7 @@ CONFIGURE_ARGS+= \
 	--with-privsep-path=/var/empty \
 	--enable-shared \
 	--disable-static \
-	--disable-debug \
+	--enable-debug \
 	--disable-strip \
 	--disable-etc-default-login \
 	--enable-lastlog \
@@ -277,11 +256,6 @@ define Package/openssh-sftp-server/install
 	ln -sf ../lib/sftp-server $(1)/usr/libexec/sftp-server
 endef
 
-define Package/openssh-sftp-avahi-service/install
-	$(INSTALL_DIR) $(1)/etc/avahi/services
-	$(INSTALL_DATA) ./files/sftp-ssh.service $(1)/etc/avahi/services/
-endef
-
 $(eval $(call BuildPackage,openssh-client))
 $(eval $(call BuildPackage,openssh-moduli))
 $(eval $(call BuildPackage,openssh-client-utils))
@@ -290,4 +264,3 @@ $(eval $(call BuildPackage,openssh-server))
 $(eval $(call BuildPackage,openssh-server-pam))
 $(eval $(call BuildPackage,openssh-sftp-client))
 $(eval $(call BuildPackage,openssh-sftp-server))
-$(eval $(call BuildPackage,openssh-sftp-avahi-service))
