@@ -26,7 +26,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/nload
   SECTION:=utils
   CATEGORY:=Utilities
-  DEPENDS:=+libncurses +libstdcpp
+  DEPENDS:=+libformw +libncurses +libstdcpp
   TITLE:=Real bandwidth monitor
   URL:=http://www.roland-riegel.de/nload/
 endef

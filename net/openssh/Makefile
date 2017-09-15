@@ -82,7 +82,7 @@ endef
 
 define Package/openssh-server
 	$(call Package/openssh/Default)
-	DEPENDS+= +openssh-keygen
+	DEPENDS+= +openssh-keygen +libwrap
 	TITLE+= server
 	USERID:=sshd=22:sshd=22
 endef
@@ -128,7 +128,7 @@ define Package/openssh-sftp-server
 	$(call Package/openssh/Default)
 	TITLE+= SFTP server
 	# Strip dependencies to avoid pulling in OpenSSL etc.
-	DEPENDS:=
+	DEPENDS:= +libwrap
 endef
 
 define Package/openssh-sftp-server/description
@@ -138,7 +138,7 @@ endef
 define Package/openssh-sftp-avahi-service
 	$(call Package/openssh/Default)
 	TITLE+= (SFTP Avahi service)
-	DEPENDS:=+openssh-sftp-server +avahi-daemon
+	DEPENDS:=+openssh-sftp-server +avahi-daemon +libwrap
 endef
 
 define Package/openssh-sftp-avahi-service/description
