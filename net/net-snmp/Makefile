@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=net-snmp
 PKG_VERSION:=5.7.3
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/net-snmp
@@ -78,7 +78,7 @@ endef
 
 define Package/snmpd
 $(call Package/net-snmp/Default)
-  DEPENDS:=+libnetsnmp
+  DEPENDS:=+libnetsnmp +libwrap
   TITLE:=Open source SNMP implementation (daemon)
 endef
 
@@ -180,8 +180,8 @@ CONFIGURE_ARGS += \
 	--with-mib-modules="$(SNMP_MIB_MODULES_INCLUDED)" \
 	--with-out-transports="$(SNMP_TRANSPORTS_EXCLUDED)" \
 	--with-transports="$(SNMP_TRANSPORTS_INCLUDED)" \
+	--with-libwrap \
 	--without-openssl \
-	--without-libwrap \
 	--without-rpm \
 	--without-zlib \
 	--with-nl \
@@ -231,14 +231,12 @@ define Package/snmp-utils/install
 endef
 
 define Package/snmpd/conffiles
-/etc/config/snmpd
+/etc/snmpd/snmpd.conf
 endef
 
 define Package/snmpd/install
-	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/snmpd.conf $(1)/etc/config/snmpd
-	$(INSTALL_DIR) $(1)/etc/snmp
-	ln -sf /var/run/snmpd.conf $(1)/etc/snmp/
+	$(INSTALL_DIR) $(1)/etc/snmpd
+	$(INSTALL_DATA) ./files/snmpd.conf $(1)/etc/snmpd/snmpd.conf
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/snmpd.init $(1)/etc/init.d/snmpd
 	$(INSTALL_DIR) $(1)/usr/sbin
