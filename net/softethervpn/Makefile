@@ -12,7 +12,7 @@ PKG_NAME:=softethervpn
 PKG_VERSION:=4.22-9634
 PKG_VERREL:=beta
 PKG_VERDATE:=2016.11.27
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=softether-src-v$(PKG_VERSION)-$(PKG_VERREL).tar.gz
 PKG_SOURCE_URL:=http://www.softether-download.com/files/softether/v$(PKG_VERSION)-$(PKG_VERREL)-$(PKG_VERDATE)-tree/Source_Code/
