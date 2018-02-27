@@ -12,8 +12,8 @@ PKG_VERSION:=2.8.8dev.6
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)$(PKG_VERSION).tar.bz2
-PKG_SOURCE_URL:=http://lynx.isc.org/current
-PKG_MD5SUM:=289255204d23c2c3e8094b50a8638dfc
+PKG_SOURCE_URL:=ftp://ftp.invisible-island.net/lynx/tarballs
+#PKG_MD5SUM:=289255204d23c2c3e8094b50a8638dfc
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)2-8-8
 
