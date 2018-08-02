@@ -1,0 +1,21 @@
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ ### Environment constants 
+ 
+-LGW_PATH ?= ../../lora_gateway/libloragw
++LGW_PATH ?= ../../libloragw-5.0.1/libloragw
+ ARCH ?=
+ CROSS_COMPILE ?=
+ export
+--- a/lora_pkt_fwd/Makefile
++++ b/lora_pkt_fwd/Makefile
+@@ -4,7 +4,7 @@ APP_NAME := lora_pkt_fwd
+ 
+ ### Environment constants 
+ 
+-LGW_PATH ?= ../../lora_gateway/libloragw
++LGW_PATH ?= ../../libloragw-5.0.1/libloragw
+ ARCH ?=
+ CROSS_COMPILE ?=
+ 
