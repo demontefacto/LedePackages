@@ -1,0 +1,35 @@
+--- a/git/fake-hwclock
++++ b/git/fake-hwclock
+@@ -32,9 +32,9 @@ fi
+ case $COMMAND in
+     save)
+         if [ -e $FILE ] ; then
+-            NOW_SEC=$(date -u '+%s')
++            NOW_SEC=$(date '+%s')
+             if $FORCE || [ $NOW_SEC -ge $HWCLOCK_EPOCH_SEC ] ; then
+-                date -u '+%Y-%m-%d %H:%M:%S' > $FILE
++                date '+%Y-%m-%d %H:%M:%S' > $FILE
+             else
+ 		echo "Time travel detected!"
+                 echo "fake-hwclock release date is in the future: $HWCLOCK_EPOCH"
+@@ -42,16 +42,16 @@ case $COMMAND in
+                 echo "To force the saved system clock backwards in time anyway, use \"force\""
+             fi
+         else
+-            date -u '+%Y-%m-%d %H:%M:%S' > $FILE
++            date '+%Y-%m-%d %H:%M:%S' > $FILE
+         fi
+         ;;
+     load)
+         if [ -e $FILE ] ; then
+             SAVED="$(cat $FILE)"
+-            SAVED_SEC=$(date -u -d "$SAVED" '+%s')
+-            NOW_SEC=$(date -u '+%s')
++            SAVED_SEC=$(date -d "$SAVED" '+%s')
++            NOW_SEC=$(date '+%s')
+             if $FORCE || [ $NOW_SEC -le $SAVED_SEC ] ; then
+-                date -u -s "$SAVED"
++                date -s "$SAVED"
+             else
+                 echo "Current system time: $(date -u '+%Y-%m-%d %H:%M:%S')"
+                 echo "fake-hwclock saved clock information is in the past: $SAVED"
