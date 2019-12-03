@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=keepalived
 PKG_VERSION:=1.3.6
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:= http://www.keepalived.org/software
@@ -64,6 +64,8 @@ define Package/keepalived/install
 	$(CP) $(PKG_INSTALL_DIR)/etc/keepalived/keepalived.conf $(1)/etc/keepalived/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/keepalived.init $(1)/etc/init.d/keepalived
+	$(INSTALL_DIR) $(1)/etc/keepalived
+	$(INSTALL_BIN) ./files/vmac.sh $(1)/etc/keepalived/vmac.sh
 endef
 
 $(eval $(call BuildPackage,keepalived))

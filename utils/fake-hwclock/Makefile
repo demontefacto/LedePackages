@@ -30,7 +30,7 @@ endef
 define Package/fake-hwclock/description
  Trivial script to load/save current contents of the kernel clock
  from/to a file. Helpful as a *bootstrap* clock on machines where
- there isn't a useful RTC driver (e.g. on development boards). Using
+ there isnt a useful RTC driver (e.g. on development boards). Using
  NTP is still recommended on these machines to get to real time sync
  once more of the system is up and running.
 endef
@@ -42,16 +42,14 @@ define Build/Compile
 endef
 
 define Package/fake-hwclock/install
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/S01fake-hwclock $(1)/etc/init.d
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/git/fake-hwclock $(1)/usr/bin
 endef
 
-define Package/fake-hwclock/postinst
-#!/bin/sh
+#define Package/fake-hwclock/postinst
+##!/bin/sh
 
-fake-hwclock
-endef
+#fake-hwclock
+#endef
 
 $(eval $(call BuildPackage,fake-hwclock))
